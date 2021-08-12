@@ -1,0 +1,363 @@
+\documentclass{ctexart}
+
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+
+\geometry{a4paper,scale=0.8}
+
+\title{\textsc{Fundamentals of Computer Graphics} Keynotes}
+\author{}
+\date{now}
+
+\begin{document}
+    \maketitle
+
+	文中部分英文找不到正式的翻译，故中英文一起给出，中文只做参考，不作为标准。
+
+	\section{P59 - 图形与函数}
+	当我们测量图形的时候，图形可以看作光能在二维平面上的分布
+	\begin{enumerate}
+		\item 平面发出的光看作这个关于位置的函数在发光平面上的分布；
+		\item 平面接受的光可以看作这个关于位置的函数在传感器平面上的分布；
+		\item 与吸收相对应的，光的反射可以看作这个关于位置的函数在平面上的分布。
+	\end{enumerate}
+
+	所以，在物理世界中，图形可以被定义成为二维空间上的函数，而且这个空间在大多数时候都是矩形。所以我们可以把图形抽象为函数
+	$$
+	I(x,y):R\to V,
+	$$
+	其中$R$为二维实数平面的子集，$V$是每个像素的取值范围。在最简单的情况下，如果每个像素只有灰度值，那么其取值范围就是正实数；如果采用RGB显色方案，那么取值范围就是正实数的三维空间。
+
+
+	\section{P59 - 图形、图像、像素与采样简述}
+	对于每一像素，这个像素的取值是这个像素点周围属性的“平均”，这个像素点的取值是这个像素点位置的局部平均（local average），在具体实践中，这个“周围”可以是这个像素点矩形覆盖的面积。
+	
+	图像（image）也可以看作是图形（也就是上文提到的function）的一种采样。
+
+
+	\section{P66 - 图像的$\alpha$值}
+	当取$\alpha$值的前景颜色$a$覆盖背景颜色$b$时，最终呈现的颜色$c$为
+	$$
+	c=\alpha\, a+(1-\alpha)\, b.
+	$$
+	
+	可以看作前景颜色遮挡了背景颜色的百分之$\alpha$。
+
+	
+	\section{P183 - 我们为什么要采样}
+	因为计算机无法直接表达连续函数，我们只能通过存储函数在不同点的取值，然后依据这些取值重新构建点与点之间没有储存的信息。以摄影举例，采样过程将$\mathbb R^2\to V$（连续平面上的图形信息）的函数转化为了$\mathbb Z^2\to C$的函数（离散网格上的图像信息）。同样的道理可以应用于对连续时间的采样，以触控板为例，触控板在不同的时刻采集触控坐标，将原有的运动轨迹（$\mathbb R\to\mathbb R^2$的位置关于时间的函数）转化为了一连串坐标序列（$\mathbb Z\to\mathbb R^2$的位置关于时刻的函数）。
+
+
+	\section{P185 – 为什么收音和放音都需要低通滤波}
+	收音：低通滤波可以滤掉高频，避免声音中的高频部分产生毛刺。这种现象称为\emph{undersampling artifacts}.
+	
+	放音：连续两个采样点之间电压不发生变化，进入下一个采样点的时候会产生高频信号输出毛刺，所以通过低通滤波将高频信号滤掉。这种现象称为\emph{reconstruction artifacts}.
+
+
+	\section{P187 - 卷积}
+	卷积是一种通过对两个函数运算产生一个新的函数的运算。
+
+	\subsection{平滑操作 moving average}
+	首先我们有一个函数$f:R\to R$和一个平滑操作的参数称为\emph{半径$r$}，那么对这个函数进行平滑操作得到的结果为
+	$$
+	g(x)=\int_{x-r}^{x+r}{f(x)\,\mathrm dx},
+	$$
+	如果这个函数只在离散的点上取值，如$a[i]$，那么对这个函数（序列）进行平滑操作的结果为
+	$$
+	c[i]=\frac1{2r+1}\sum_{j=i-r}^{i+r}a[j].
+	$$
+
+	\subsection{对于离散函数的卷积}
+	假设有两个定义在离散定义域上的有界函数$a[i],b[i]$，它们的卷积记为$(a\star b)[i]$，那么
+	$$
+	(a\star b)[i]=\sum_j{a[j]\, b[i-j]},
+	$$
+
+	在卷积运算中，往往其中一个参与运算的函数是finite supported的，不妨假定为$b$，拥有这种性质意味着存在半径$r$，对于所有$|k|>r$，都有$b[k]=0$，即对于一定距离以外的值都为$0$。那么卷积的运算可以简化为
+	$$
+	(a\star b)[i]=\sum_{j=i-r}^{i+r}{a[j]\, b[i-j]}.
+	$$
+	我们通常称前一个函数为信号signal，称呼一个函数，即函数$b[i]$为卷积核filter.显然只要卷积核的所有取值都为非负而且总和为$1$，那么这个卷积核的卷积操作就等价于前文所述的平滑操作。
+
+	\subsection{卷积、卷积核}
+	书接上文，卷积可以很好地表示卷积核（如上文所述的平滑操作）的作用，像上文中所说到的对半径范围内取平均的操作的平滑操作对应的卷积核称为盒型卷积核（box filter），其函数表达如下
+	$$
+	b[k]=\left\{
+		\begin{aligned}
+			&\frac1{2r+1}&-r\leqslant k\leqslant r,\\
+			&0&\text{otherwise}.
+		\end{aligned}
+	\right.
+	$$
+	从它的图像可以看出盒型卷积核这个名字的来历（图略）。
+
+	卷积核在一般情况下所有取值的总和总是为$1$，这样卷积操作就不会影响到函数的整体大小。
+
+	\subsection{卷积的性质}
+	在前文中，我们提出了信号和卷积核的概念，但是实际上参与卷积的两个函数并没有先后之分，换言之，它们的地位是“平等”的：信号和卷积核是可以交换的。这一点可以很容易通过变量的代换和换名证明。由此提出卷积的三条显而易见的性质
+	\begin{enumerate}
+		\item 交换律：$(a\star b)[i]=(b\star a)[i]$；
+		\item 结合律：$((a\star b)\star c)[i]=(a\star(b\star c))[i]$；
+		\item 关于函数加法的分配律：$(a\star(b+c))[i]=(a\star b+a\star c)[i]$
+	\end{enumerate}
+	以上三条性质与函数乘法十分相似。
+
+	\subsubsection{离散冲激函数discrete impluse}
+	离散冲击函数定义只在$i=0$处为$1$，其余取值均为$0$，通常记为$d$.
+
+
+	\subsection{从函数的偏移的和的角度看待卷积}
+	除了从上文所述的卷积核出发看待卷积的角度之外，我们还可以从信号的角度看待卷积，
+	$$
+	(a\star b)[i]=\sum_j{a[j]\,b[i-j]},
+	$$
+	这是原有的卷积表达式，如果我们定义一个新的信号$b_{\to j},b_{\to j}[i]=b[i-j]$，即原有的$b$序列向左移动$j$单位得到新序列$b_{\to j}$，那么对于卷积表达式，可以做出如下修改
+	$$
+	a\star b=\sum_j{a[j]\, b_{\to j}},
+	$$
+	即卷积的结果可以堪称序列$b$平移不同距离对应的加权和（此处的和是序列的和，可以定义序列的和为序列对应项相加得到新的序列，可以证明序列和也满足群的性质）。
+
+	\subsection{连续函数的卷积}
+	对于两个一元连续函数$f,g$，可以参照离散的情况给出它们的卷积表达式
+	$$
+	(f\star g)(x)=\int_{-\infty}^{+\infty}{f(t)\, g(x-t)\,\mathrm dt},
+	$$
+	以上表达式可以看作将函数$g$右移$x$形成的新函数与$f$相乘得到的函数在$(-\infty,+\infty)$上积分的结果。同样地，我们定义$g_{\to t}(x)=g(x-t)$，有
+	$$
+	f\star g=\int_{-\infty}^{+\infty}{f(t)g_{\to t}\mathrm dt}.
+	$$
+
+	\subsubsection{三角波函数Tent function}
+	对于这样一个函数
+	$$
+	f(x)=\left\{
+		\begin{aligned}
+			&1&x\in\left[-\frac12,\frac12\right),\\
+			&0&\text{otherwise}.
+		\end{aligned}
+	\right.
+	$$
+	其自卷积
+	$$
+	(f\star f)(x)=\left\{
+		\begin{aligned}
+			&1-|x|&x\in[-1,1],\\
+			&0&\text{otherwise}.
+		\end{aligned}
+	\right.
+	$$
+	这个函数称为三角波函数（tent function），是一个常用的卷积核。
+	
+	\subsubsection{狄拉克冲激函数狄/拉克$\delta$函数}
+	与离散冲激函数类似地，可以定义狄拉克冲激函数。狄拉克冲激函数$\delta$是一个一元函数，其定义如下：对于所有$x\neq0$的点，函数的取值为$0$，而且函数在$(-\infty,+\infty)$上的积分值恒为$1$.所以狄拉克冲激函数可以“选出”任意函数在$x=0$处的取值
+	$$
+	\int_{-\infty}^{+\infty}{f(t)\delta(t) \mathrm dt}=f(0).
+	$$
+
+	由此，狄拉克冲激函数与任何其他函数的卷积有
+	$$
+	(f\star \delta)(x)=\int_{-\infty}^{+\infty}{\delta(t)f(x-t)\mathrm dt}=f(x),
+	$$
+	即
+	$$
+	f\star \delta=\delta\star f=f.
+	$$
+
+	\subsection{离散函数与连续函数的卷积}
+	有两种方式进行两者的卷积。第一种是通过采样的方式将连续函数转换为离散函数，然后进行离散函数的卷积得到离散函数；另一种方式通过离散函数重构一个连续函数，在这种情况下，我们直接对离散函数$a$应用连续函数$f$作为卷积核得到连续函数，即
+	$$
+	(a\star f)(x)=\sum_j{a[j]f(x-j)},
+	$$
+	这就好比将$f$右移$j$处后与$a[j]$相乘然后所有的乘积相加得到卷积在$x$处的取值，抑或是$a$关于卷积核$f$位移到$x=i$后的加权平均作为$a[i]$的值。
+
+	\subsection{多元函数的卷积}
+	同样地，对于二元离散函数$a,b$，其卷积
+	$$
+	(a\star b)[i,j]=\sum_r\sum_sa[r,s]b[i-r,j-s],
+	$$
+	如果函数$b$是finit supported的，且半径为$r$，那么
+	$$
+	(a\star b)[i,j]=\sum_{r=i-r}^{i+r}\sum_{s=j-r}^{j+r}a[r,s]b[i-r,j-s].
+	$$
+	我们注意到相乘的项总是关于$(i,j)$对称，这种对称性也可以在一元函数卷积中找到。
+
+	类似地，对于连续二元函数$f,g$，其卷积
+	$$
+	(f\star g)(x,y)=\iint f(x',y')g(x-x',y-y')\mathrm dx'\mathrm dy',
+	$$
+	对于离散函数和连续函数的卷积，同样地
+	$$
+	(a\star f)(x,y)=\sum_r\sum_xa[r,s]f(x-r,y-s).
+	$$
+
+	\subsection{常用卷积核}
+	约定卷积核的积分为$1$，且定义半径为$r$的卷积核$f(x)$缩小$s$为$f_x(x)=f(x/s)/s$，其半径为$sr$.
+
+	\subsubsection{盒型卷积核}
+	离散情况
+	$$
+	a_{\text{box},r}[i]=\left\{
+		\begin{aligned}
+			&\frac1{2r+1}&|i|\leqslant r,\\
+			&0&\text{otherwise}.
+		\end{aligned}
+	\right.
+	$$
+
+	连续情况
+	$$
+	f_{\text{box},r}(x)=\left\{
+		\begin{aligned}
+			&\frac1{2r}&-r\leqslant x<r,\\
+			&0&\text{otherwise}.
+		\end{aligned}
+	\right.
+	$$
+	对于离散情况，默认其半径为$1/2$.
+
+	\subsubsection{三角波型卷积核}
+	离散情况和连续情况的定义一致
+	$$
+	f_{\text{tent}}(x)=\left\{
+		\begin{aligned}
+			&1-|x|&|x|<1,\\
+			&0&\text{otherwise}.
+		\end{aligned}
+	\right.
+	$$
+
+	\subsubsection{高斯卷积核}
+	$$
+	f_{g,\sigma}(x)=\frac1{\sigma\sqrt{2\pi}}e^{-x^2/(2\sigma^2)}.
+	$$
+	显然高斯卷积核不存在finit support，但是我们可以定义\emph{截断高斯卷积核}，即定义一个半径$r$，认为超出半径的函数值可以忽略。
+
+	\subsubsection{三次B样条卷积核 The B-spline Cubic Filter}
+	$$
+	f_B(x)=\left\{
+		\begin{aligned}
+			&-3(1-|x|)^3+3(1-|x|)^2+3(1-|x|)+1&-1\leqslant x\leqslant 1,\\
+			&(2-|x|)^3&1\leqslant x\leqslant 2,\\
+			&0&\text{otherwise}.
+		\end{aligned}
+	\right.
+	$$
+	三次B样条卷积核有一个性质可以证明
+	$$
+	f_B(x)=f_{\text{box}}(x)\star f_{\text{box}}(x)\star f_{\text{box}}(x)\star f_{\text{box}}(x).
+	$$
+
+	\subsubsection{Catmull-Rom三次卷积核}
+	$$
+	f_C(x)=\frac12\left\{
+		\begin{aligned}
+			&-3(1-|x|)^3+4(1-|x|)^2+(1-|x|)+1&-1\leqslant x\leqslant 1,\\
+			&(2-|x|)^3-(2-|x|)^2&1\leqslant x\leqslant 2,\\
+			&0&\text{otherwise}.
+		\end{aligned}
+	\right.
+	$$
+
+	\subsubsection{Mitchell-Netravali三次卷积核}
+	$$
+	f_M(x)=\frac13f_B(x)+\frac23f_C(x)=\frac12\left\{
+		\begin{aligned}
+			&-21(1-|x|)^3+27(1-|x|)^2+9(1-|x|)+1&-1\leqslant x\leqslant 1,\\
+			&7(2-|x|)^3-6(2-|x|)^2&1\leqslant x\leqslant 2,\\
+			&0&\text{otherwise}.
+		\end{aligned}
+	\right.
+	$$
+	这种卷积核可看作前两种的加权平均。
+
+	\subsection{卷积核在图像处理中的应用}
+	图像处理就是将图像做卷积，例如之前提到的盒型卷积核（二维）和高斯卷积核（二维）可以用来实现图像的模糊操作。
+
+	如果要执行锐化操作，则可以将原图片减去模糊处理的图片后提升亮度。
+	\[
+		\begin{aligned}
+			I_{\text{sharp}}&=(1+\alpha)\,I-\alpha\,(f_{g,\sigma}\star I)\\
+			&=((1+\alpha)\,d-\alpha\,f_{g,\sigma})\star I\\
+			&=f_{\text{sharp}}\star I.
+		\end{aligned}
+	\]
+
+	如果要执行平移操作，也可以通过卷积核解决，这里利用了冲激函数（离散二维）的挑选性质。
+	\[
+		d_{m,n}(i,j)=\left\{
+			\begin{aligned}
+				&1&i=m,j=n,\\
+				&0&\text{otherwise}.
+			\end{aligned}
+		\right.
+	\]
+
+	结合平移操作和模糊操作，就能给出图形阴影的卷积核。
+	\[
+		I_{\text{shadow}}=(I\star d_{m,n})\star f_{g,\sigma}=I\star f_{\text{shadow}}.
+	\]
+
+	\section{采样理论}
+	采样理论揭示了一些关于采样和卷积的更深刻的数学原理。
+
+	\subsection{傅里叶变换}
+	傅里叶变换的效果就是将任意函数变换为一系列不同频率和振幅的正弦函数的和。例如周期为$1$门函数可以表示为
+	\[\sum_{i=1,3,\cdots}^\infty{\frac4{\pi n}\sin{2\pi nx}},\]
+	我们注意到所有正弦项的频率都是$2\pi$的整数倍，这是因为这个门的周期恰好为$1$所致。
+
+	但是需要注意的是，进行傅里叶变换的信号（函数）不一定必须是周期函数，正如上文所说，可以是任意函数，当是这种情况的时候，我们可以使用\emph{一族}正弦函数（a continous family of sinusoids）而不是原有的一系列（a sequence of）正弦函数来表示，仍然以前文的门为例，它可以表示为
+	\[\int_{-\infty}^{+\infty}{\frac{\sin{\pi u}}{\pi u}{\cos{2\pi ux}}\mathrm du}.\]
+
+	上式中的余弦函数可以看作$\exp(2\pi uxi)$中的实部，前一个分式可以看作一个关于积分变量的函数，也称为权重；如前文所说，任意的函数$f$都可以表示为傅里叶变换的形式，在这个形式中，权重记为$\hat f$，那么$f$可以写成
+	\[f(x)=\int_{-\infty}^{+\infty} \hat f(u) e^{2\pi ixu} \mathrm du.\tag{IFT}\]
+	由$f$计算$\hat f$也可以使用十分近似的形式（指数部分取负号），这个过程称为傅里叶变换（FT），反之则称为逆傅里叶变换（IFT）。我们记函数$f$的傅里叶变换为$\mathcal{F} \{f\}$，将$\hat f$的逆傅里叶变换记为$\mathcal F^{-1}\{\hat f\}$，需要注意的是，在不加说明的情况下$\mathcal F,\mathcal F^{-1}$指的是从时域到频域（而不是角频域$\omega$）和反之的傅里叶变换与逆变换。
+	\[\hat f(u)=\int_{-\infty}^{+\infty} f(x) e^{-2\pi ixu} \mathrm dx.\tag{FT}\]
+
+	傅里叶变换具有一下的一些性质
+	\begin{enumerate}
+		\item $\int (f(x))^2\mathrm dx=\int (\hat f(u))^2\mathrm du$，这可以理解为傅里叶变换前后的函数具有相同的“能量”，此外根据积分性质不难证明$\mathcal F\{a\,f\}=a\mathcal F\{f\}$
+		\item $\mathcal F\{f(x/b)\}=b\hat f(bu)$，这一条可以通过傅里叶变换的性质和积分的性质证明出来。结合1、2我们可以在已知某些函数的标准形式的傅里叶变换下推导出这些函数的其他形式的傅里叶变换结果，例如从标准门到搞$12.3$宽$1.32\times10^{1928}$的门
+		\item $\hat f(0)$等于$f$的平均值
+		\item $f$是实函数则$\hat f$是偶函数，$\hat f$是实函数则$f$是偶函数
+	\end{enumerate}
+
+	\subsection{卷积与傅里叶变换}
+	一个值得留意的性质是卷积与傅里叶变换之间的关系可以写成
+	\[\mathcal F\{f\star g\}=\hat f\hat g,f\star g=\mathcal F\{\hat f\hat g\}.\]
+
+	\subsubsection{常见函数的傅里叶变换}
+	门函数的傅里叶变换
+	\[\mathcal F\{f_{\text{box}}\}=\operatorname{sinc}x.\]
+
+	依照定义，可以给出三角波函数的傅里叶变换
+	\[\mathcal F\{f_{\text{tent}}\}=\operatorname{sinc}^2x.\]
+
+	同样地，给出三次B样条函数的傅里叶变换
+	\[ \mathcal F\{ f_{\text{B}} \}=\operatorname{sinc}^4x. \]
+
+	此处注意$\operatorname{sinc}x=\frac{\sin \pi x}{\pi x}$.以下给出门函数傅里叶变换的推导过程。
+
+	假定门函数的总只在$[-T/2,T/2],T\in\mathbb{R}^*$取值为$1$，其余均为$0$.那么
+	\[
+		\begin{aligned}
+			\mathcal F \{f_{\text{box}}\}
+			&=\int_{-\infty}^{+\infty} f_{\text{box}}(t)\,e^{-2\pi ift}\mathrm dt \\
+			&=\int_{-\frac T2}^{+\frac T2} A\,e^{-2\pi ift}\mathrm dt \\
+			&=\frac A{-2\pi if}\,e^{-2\pi ift}\Big|^{\frac T2}_{-\frac T2} \\
+			&=A\,\operatorname{sinc}{f\,T}
+		\end{aligned}
+	\]
+	在上例中$A=1$.
+
+	而高斯函数的傅里叶变换
+	\[ \mathcal F\{f_G\}=e^{-(2\pi u)^2/2}. \]
+
+	\subsubsection{采样理论中的狄拉克冲激函数}
+	基于狄拉克冲激函数，我们定义冲击串，冲击串是固定间隔的狄拉克冲激函数的和，其形式化定义如下
+	\[ s_T(x)=\sum_{k\in\mathbb Z}\delta(x-kT), \]
+	其傅里叶变换为
+	\[ \hat s_T(u)=\mathcal F_f \{s_T(x)\}=f\,\sum_{k\in\mathbb Z}\delta(u-kf),f=\frac1T, \]
+	如果傅里叶变换到角频率所在的频域，那么则有
+	\[ \hat s_T(u)=\mathcal F_\omega \{s_T(x)\}=\omega\,\sum_{k\in\mathbb Z}\delta(u-k\omega),\omega=\frac{2\pi}T. \]
+
+\end{document}
